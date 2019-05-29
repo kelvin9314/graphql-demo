@@ -2,21 +2,9 @@ const { ApolloServer, gql } = require('apollo-server');
 
 //  加入假資料
 const users = [
-  {
-    id: 1,
-    name: 'Fong',
-    age: 23
-  },
-  {
-    id: 2,
-    name: 'Kevin',
-    age: 40
-  },
-  {
-    id: 3,
-    name: 'Mary',
-    age: 18
-  }
+  { id: 1, name: 'Fong', age: 23, friendIds: [2, 3] },
+  { id: 2, name: 'Kevin', age: 40, friendIds: [1] },
+  { id: 3, name: 'Mary', age: 18, friendIds: [1] }
 ];
 
 //  GraphQL Schema 定義
@@ -38,6 +26,8 @@ const typeDefs = gql`
     name: String
     "年齡"
     age: Int
+    "朋友們"
+    friends: [User]
   }
 
   type Query {
@@ -45,6 +35,8 @@ const typeDefs = gql`
     hello: String
     "取得當下使用者"
     me: User
+    "取得所有使用者"
+    users: [User]
   }
 `;
 
@@ -53,7 +45,18 @@ const resolvers = {
   Query: {
     // 需注意名稱一定要對到 Schema 中 field 的名稱
     hello: () => 'world',
-    me: ()=> users[0]
+    me: ()=> users[0],
+    users: ()=> users
+  },
+  User: {
+    // 每個 Field Resolver 都會預設傳入三個參數，
+    // 分別為上一層的資料 (即 user)、參數 (下一節會提到) 以及 context (全域變數)
+    friends: (parent, args, context) => {
+      // 從 user 資料裡提出 friendIds
+      const { friendIds } = parent;
+      // Filter 出所有 id 出現在 friendIds 的 user
+      return users.filter(user => friendIds.includes(user.id));
+    }
   }
 };
 
